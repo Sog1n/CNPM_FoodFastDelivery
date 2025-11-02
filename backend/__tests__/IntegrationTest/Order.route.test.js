@@ -466,7 +466,7 @@ describe('Order Routes', () => {
     });
 
     describe('GET /api/orders/getAllOrders', () => {
-        it('should get all unassigned orders', async () => {
+        it('should get all ready orders without assigned drone', async () => {
             await OrderModel.create({
                 user: testUser._id,
                 restaurant: testRestaurant._id,
@@ -482,7 +482,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'confirmed',
+                orderStatus: 'ready',  // Changed to 'ready' - getAllOrders only returns ready orders
                 drone: null
             });
 
@@ -501,7 +501,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 60,
-                orderStatus: 'confirmed',
+                orderStatus: 'ready',  // Changed to 'ready'
                 drone: testDrone._id
             });
 
@@ -511,7 +511,7 @@ describe('Order Routes', () => {
 
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body)).toBe(true);
-            expect(response.body.length).toBe(1);
+            expect(response.body.length).toBe(1);  // Only returns the order without drone
             expect(response.body[0].drone).toBeUndefined();
         });
     });
