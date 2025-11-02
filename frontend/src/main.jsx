@@ -45,6 +45,8 @@ import UsersRestaurant from "./pages/Users/usershome/UsersRestaurant.jsx"
 import Usersliked from "./pages/Users/liked/Usersliked.jsx";
 import Usersorders from "./pages/Users/usersOrders/Usersorders.jsx";
 import UsersCart from "./pages/Users/userscart/usersCart.jsx";
+import PaymentSuccess from "./pages/Users/payment/PaymentSuccess.jsx";
+import PaymentFailed from "./pages/Users/payment/PaymentFailed.jsx";
 import ResOrders from "./pages/restaurant/ResOrders.jsx";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from 'redux-persist/integration/react';
@@ -89,6 +91,8 @@ const router = createBrowserRouter(
       <Route path="/Usersliked" element={<Usersliked />} />
       <Route path="/UsersOrders" element={<Usersorders />} />
       <Route path="/UsersCart" element={<UsersCart />} />
+      <Route path="/payment-success" element={<PaymentSuccess />} />
+      <Route path="/payment-failed" element={<PaymentFailed />} />
 
 
 
