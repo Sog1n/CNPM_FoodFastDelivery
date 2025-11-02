@@ -9,7 +9,7 @@ import { RxCross2 } from "react-icons/rx";
 
 const CurrentOrder = ({ orders, getOrders }) => {
 
-  const currentOrders = orders.filter((order) => order.orderStatus !== 'Delivered' && order.drone !== null);
+  const currentOrders = orders.filter((order) => order.orderStatus !== 'delivered' && order.drone !== null);
 
   const [status, setStatus] = useState('');
   const delId = localStorage.getItem('delId');
@@ -18,7 +18,7 @@ const CurrentOrder = ({ orders, getOrders }) => {
     try {
       const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/order/updateOrderStatus/${orderId}`,
         {
-          orderStatus: 'Delivered'
+          orderStatus: 'delivered'
         },
         {
           withCredentials: true,
@@ -119,7 +119,7 @@ const CurrentOrder = ({ orders, getOrders }) => {
 
 const PastOrder = ({ orders }) => {
 
-  const pastOrders = orders.filter((order) => order.orderStatus === 'Delivered');
+  const pastOrders = orders.filter((order) => order.orderStatus === 'delivered');
   console.log(pastOrders);
   return (
     <>

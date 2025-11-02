@@ -80,7 +80,7 @@ router.put('/updateOrderStatus/:id', AuthenticateDel, async (req, res) => {
             const updatedOrder = await order.save();
 
             // If delivered, set drone status to AVAILABLE
-            if (orderStatus === 'Delivered' && order.drone) {
+            if (orderStatus === 'delivered' && order.drone) {
                 const DroneModel = (await import('../models/DroneModel.js')).default;
                 const drone = await DroneModel.findById(order.drone);
                 if (drone) {
@@ -169,7 +169,7 @@ router.get('/getOrdersByResId/:id', Authenticate, async (req, res) => {
 
 router.get('/getAllDeliveredOrders', AuthenticateDel, async (req, res) => {
     try {
-        const orders = await OrderModel.find({ orderStatus: 'Delivered' }) // changed from deliveryman
+        const orders = await OrderModel.find({ orderStatus: 'delivered' }) // changed from deliveryman
             .select('-__v -drone')
             .populate('user', 'ownerName phone')
             .populate('paymentId', 'orderId')
@@ -300,6 +300,34 @@ router.get('/getOrdersByUserId', AuthenticateUser, async (req, res) => {
             res.status(404).json({ error: 'Orders not found' });
         }
     } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Route to cancel order (only for pending orders)
+router.put('/cancelOrder/:id', AuthenticateUser, async (req, res) => {
+    try {
+        const order = await OrderModel.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check if the order belongs to the user
+        if (order.user.toString() !== req.UserId.toString()) {
+            return res.status(403).json({ error: 'Unauthorized to cancel this order' });
+        }
+
+        // Only allow cancellation of pending orders
+        if (order.orderStatus !== 'pending') {
+            return res.status(400).json({ error: 'Only pending orders can be cancelled' });
+        }
+
+        order.orderStatus = 'cancel';
+        const updatedOrder = await order.save();
+        res.status(200).json(updatedOrder);
+    } catch (error) {
+        console.log(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

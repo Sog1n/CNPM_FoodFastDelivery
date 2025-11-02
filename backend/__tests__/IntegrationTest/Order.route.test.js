@@ -143,7 +143,7 @@ describe('Order Routes', () => {
             expect(response.body.user.toString()).toBe(testUser._id.toString());
             expect(response.body.restaurant.toString()).toBe(testRestaurant._id.toString());
             expect(response.body.totalAmount).toBe(100);
-            expect(response.body.orderStatus).toBe('Preparing');
+            expect(response.body.orderStatus).toBe('pending');
         });
 
         it('should fail without authentication', async () => {
@@ -194,16 +194,16 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'Preparing'
+                orderStatus: 'pending'
             });
 
             const response = await request(app)
                 .put(`/api/orders/updateOrder/${order._id}`)
                 .set('Cookie', [`token=${restaurantToken}`])
-                .send({ orderStatus: 'Ready' });
+                .send({ orderStatus: 'confirmed' });
 
             expect(response.status).toBe(200);
-            expect(response.body.orderStatus).toBe('Ready');
+            expect(response.body.orderStatus).toBe('confirmed');
         });
 
         it('should return 404 for non-existent order', async () => {
@@ -212,7 +212,7 @@ describe('Order Routes', () => {
             const response = await request(app)
                 .put(`/api/orders/updateOrder/${fakeId}`)
                 .set('Cookie', [`token=${restaurantToken}`])
-                .send({ orderStatus: 'Ready' });
+                .send({ orderStatus: 'confirmed' });
 
             expect(response.status).toBe(404);
             expect(response.body.error).toBe('Order not found');
@@ -230,7 +230,7 @@ describe('Order Routes', () => {
 
             const response = await request(app)
                 .put(`/api/orders/updateOrder/${order._id}`)
-                .send({ orderStatus: 'Ready' });
+                .send({ orderStatus: 'confirmed' });
 
             expect(response.status).toBe(401);
         });
@@ -253,17 +253,17 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'Ready',
+                orderStatus: 'confirmed',
                 drone: testDrone._id
             });
 
             const response = await request(app)
                 .put(`/api/orders/updateOrderStatus/${order._id}`)
                 .set('Cookie', [`token=${deliveryToken}`])
-                .send({ orderStatus: 'Out for delivery' });
+                .send({ orderStatus: 'shipping' });
 
             expect(response.status).toBe(200);
-            expect(response.body.orderStatus).toBe('Out for delivery');
+            expect(response.body.orderStatus).toBe('shipping');
         });
 
         it('should set drone status to AVAILABLE when order is delivered', async () => {
@@ -286,17 +286,17 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'Out for delivery',
+                orderStatus: 'shipping',
                 drone: testDrone._id
             });
 
             const response = await request(app)
                 .put(`/api/orders/updateOrderStatus/${order._id}`)
                 .set('Cookie', [`token=${deliveryToken}`])
-                .send({ orderStatus: 'Delivered' });
+                .send({ orderStatus: 'delivered' });
 
             expect(response.status).toBe(200);
-            expect(response.body.orderStatus).toBe('Delivered');
+            expect(response.body.orderStatus).toBe('delivered');
 
             // Check drone status is updated
             const updatedDrone = await DroneModel.findById(testDrone._id);
@@ -309,7 +309,7 @@ describe('Order Routes', () => {
             const response = await request(app)
                 .put(`/api/orders/updateOrderStatus/${fakeId}`)
                 .set('Cookie', [`token=${deliveryToken}`])
-                .send({ orderStatus: 'Delivered' });
+                .send({ orderStatus: 'delivered' });
 
             expect(response.status).toBe(404);
             expect(response.body.error).toBe('Order not found');
@@ -333,7 +333,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'Ready'
+                orderStatus: 'confirmed'
             });
 
             const response = await request(app)
@@ -433,7 +433,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'Delivered'
+                orderStatus: 'delivered'
             });
 
             await OrderModel.create({
@@ -451,7 +451,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 60,
-                orderStatus: 'Preparing'
+                orderStatus: 'pending'
             });
 
             const response = await request(app)
@@ -461,7 +461,7 @@ describe('Order Routes', () => {
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body)).toBe(true);
             expect(response.body.length).toBe(1);
-            expect(response.body[0].orderStatus).toBe('Delivered');
+            expect(response.body[0].orderStatus).toBe('delivered');
         });
     });
 
@@ -482,7 +482,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'Ready',
+                orderStatus: 'confirmed',
                 drone: null
             });
 
@@ -501,7 +501,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 60,
-                orderStatus: 'Ready',
+                orderStatus: 'confirmed',
                 drone: testDrone._id
             });
 
@@ -533,7 +533,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'Out for delivery',
+                orderStatus: 'shipping',
                 drone: testDrone._id
             });
 
@@ -552,7 +552,7 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 60,
-                orderStatus: 'Ready',
+                orderStatus: 'confirmed',
                 drone: null
             });
 
@@ -692,29 +692,29 @@ describe('Order Routes', () => {
                     }
                 ],
                 totalAmount: 100,
-                orderStatus: 'Preparing'
+                orderStatus: 'pending'
             });
 
-            // Update to Ready
+            // Update to confirmed
             let response = await request(app)
                 .put(`/api/orders/updateOrder/${order._id}`)
                 .set('Cookie', [`token=${restaurantToken}`])
-                .send({ orderStatus: 'Ready' });
-            expect(response.body.orderStatus).toBe('Ready');
+                .send({ orderStatus: 'confirmed' });
+            expect(response.body.orderStatus).toBe('confirmed');
 
-            // Update to Out for delivery
+            // Update to shipping
             response = await request(app)
                 .put(`/api/orders/updateOrderStatus/${order._id}`)
                 .set('Cookie', [`token=${deliveryToken}`])
-                .send({ orderStatus: 'Out for delivery' });
-            expect(response.body.orderStatus).toBe('Out for delivery');
+                .send({ orderStatus: 'shipping' });
+            expect(response.body.orderStatus).toBe('shipping');
 
-            // Update to Delivered
+            // Update to delivered
             response = await request(app)
                 .put(`/api/orders/updateOrderStatus/${order._id}`)
                 .set('Cookie', [`token=${deliveryToken}`])
-                .send({ orderStatus: 'Delivered' });
-            expect(response.body.orderStatus).toBe('Delivered');
+                .send({ orderStatus: 'delivered' });
+            expect(response.body.orderStatus).toBe('delivered');
         });
     });
 });

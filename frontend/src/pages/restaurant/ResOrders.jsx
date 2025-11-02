@@ -80,9 +80,9 @@ const CurrentOrder = ({ currentOrders, getOrders }) => {
                                     onChange={(e) => { handleStatusChange(e, order?._id) }}
                                     className='shadow-md border-none rounded-md mr-6'>
                                     {/* <option value={order.orderStatus}>{order.orderStatus}</option> */}
-                                    <option value="Preparing">Preparing</option>
-                                    <option value="Ready">Ready</option>
-                                    <option value="Out for delivery">Out for delivery</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="shipping">Shipping</option>
                                 </select>
                                 <p className='mt-4 text-neutral-500 text-sm'>
                                     
@@ -143,7 +143,7 @@ const PastOrder = ({ pastOrders }) => {
                                     Status
                                 </label>
                                 <p className='text-neutral-500'>
-                                    Delivered
+                                    delivered
                                 </p>
 
                             </div>
@@ -182,8 +182,8 @@ const ResOrders = () => {
         getOrders();
     }, []);
 
-    const currentOrders = orders.filter((order) => order.orderStatus !== 'Delivered');
-    const pastOrders = orders.filter((order) => order.orderStatus === 'Delivered');
+    const currentOrders = orders.filter((order) => order.orderStatus !== 'delivered');
+    const pastOrders = orders.filter((order) => order.orderStatus === 'delivered');
 
 
     return (
