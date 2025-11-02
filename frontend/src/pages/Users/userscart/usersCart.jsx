@@ -115,6 +115,48 @@ const UsersCart = () => {
     }
   };
 
+  const handleVNPayPayment = async () => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/payment/vnpay/create_payment_url`,
+        {
+          products: cartItems,
+          amount: cartTotal,
+          orderItems: cartItems.map((item) => ({
+            item: { dishName: item.dishName, price: item.price },
+            quantity: item.quantity
+          }))
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.success) {
+        // Store order data in session storage for later use
+        sessionStorage.setItem('pendingOrder', JSON.stringify({
+          orderItems: cartItems.map((item) => ({
+            item: { dishName: item.dishName, price: item.price },
+            quantity: item.quantity
+          })),
+          totalAmount: cartTotal,
+          deliveryAddress: selectedAddress,
+          restaurant: restaurant,
+          userId: userId
+        }));
+
+        // Redirect to VNPay payment page
+        window.location.href = response.data.paymentUrl;
+      }
+    } catch (error) {
+      console.error("VNPay payment error:", error);
+      alert('❌ Failed to create VNPay payment. Please try again.');
+    }
+  };
+
   const handlePayment = async () => {
     try {
       const body = { products: cartItems };
@@ -328,13 +370,21 @@ const UsersCart = () => {
                   {country}, {state}, {city}, {address}
                 </p>
                 <h2 className="text-xl font-semibold mb-4">Cart Totals</h2>
-                <p className="mb-4">Total: $ {cartTotal.toFixed(2)}</p>
-                <button
-                  className="w-full bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition duration-300"
-                  onClick={handlePayment}
-                >
-                  Proceed to Payment
-                </button>
+                <p className="mb-4 text-lg font-bold">Total: $ {cartTotal.toFixed(2)}</p>
+
+                <div className="mb-4">
+                  <button
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 flex items-center justify-center gap-3 font-bold shadow-lg hover:shadow-xl transform hover:scale-105"
+                    onClick={handleVNPayPayment}
+                  >
+                    <img
+                      src="https://vnpay.vn/s1/statics.vnpay.vn/2023/9/06ncktiwd6dc1694418196384.png"
+                      alt="VNPay Logo"
+                      className="h-8 w-auto bg-white p-1 rounded"
+                    />
+                    <span className="text-lg">Thanh Toán VNPay</span>
+                  </button>
+                </div>
               </div>
             ) }
           </div>
