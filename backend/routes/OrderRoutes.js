@@ -125,6 +125,7 @@ router.put('/assignDrone/:id', AuthenticateDel, async (req, res) => {
         if (order) {
             const droneId = req.body.droneId;
             order.drone = droneId;
+            order.orderStatus = 'shipping'; // Change status to shipping when drone is assigned
             await order.save();
 
             // Update drone status to IN_DELIVERY
@@ -229,7 +230,10 @@ router.get('/getAllAcceptedOrders', AuthenticateDel, async (req, res) => {
 
 router.get('/getAllOrders', AuthenticateDel, async (req, res) => {
     try {
-        const orders = await OrderModel.find({ drone: null }) // changed from deliveryman
+        const orders = await OrderModel.find({
+            drone: null,
+            orderStatus: 'ready'
+        }) // Only get ready orders without drone
             .select('-__v -drone')
             .populate('user', 'ownerName phone')
             .populate('paymentId', 'orderId')

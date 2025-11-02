@@ -1,15 +1,25 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import { RxCross2 } from "react-icons/rx";
 
 const CurrentOrder = ({ currentOrders, getOrders }) => {
 
-    const [status, setStatus] = useState('');
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [orderToCancel, setOrderToCancel] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     //Update order status
     const updateOrderStatus = async (orderId, newstatus) => {
+        // Show confirmation modal for cancel action
+        if (newstatus === 'cancel') {
+            const order = currentOrders.find(o => o._id === orderId);
+            setOrderToCancel(order);
+            setShowCancelModal(true);
+            return;
+        }
+
         try {
+            setIsUpdating(true);
             const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/order/updateOrder/${orderId}`,
                 {
                     orderStatus: newstatus
@@ -22,12 +32,40 @@ const CurrentOrder = ({ currentOrders, getOrders }) => {
             getOrders();
         } catch (error) {
             console.log(error);
+            alert('Failed to update order status. Please try again.');
+        } finally {
+            setIsUpdating(false);
         }
     }
 
-    const handleStatusChange = (e, orderId) => {
-        setStatus(e.target.value);
-        updateOrderStatus(orderId, e.target.value);
+    const confirmCancelOrder = async () => {
+        if (!orderToCancel) return;
+
+        try {
+            setIsUpdating(true);
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/order/updateOrder/${orderToCancel._id}`,
+                {
+                    orderStatus: 'cancel'
+                },
+                {
+                    withCredentials: true,
+                }
+            );
+            console.log('Order cancelled', res.data);
+            getOrders();
+            setShowCancelModal(false);
+            setOrderToCancel(null);
+        } catch (error) {
+            console.log(error);
+            alert('Failed to cancel order. Please try again.');
+        } finally {
+            setIsUpdating(false);
+        }
+    }
+
+    const closeCancelModal = () => {
+        setShowCancelModal(false);
+        setOrderToCancel(null);
     }
 
 
@@ -36,65 +74,207 @@ const CurrentOrder = ({ currentOrders, getOrders }) => {
             {
                 currentOrders?.map((order) => (
                     <>
-                        <div className='flex justify-between mx-20 my-6 bg-white shadow-md rounded-md font-poppins '>
-                            <div className='flex flex-col m-4 p-2 gap-y-3'>
-                                <div className='font-semibold text-lg'>
-                                    ID : {order?.paymentId?.orderId}
-                                    {/* //Change this to payment order id */}
+                        <div className='flex flex-col mx-20 my-6 bg-white shadow-md rounded-md font-poppins'>
+                            {/* Top Section: Order Info */}
+                            <div className='flex justify-between border-b border-gray-200 pb-4'>
+                                <div className='flex flex-col m-4 p-2 gap-y-3'>
+                                    <div className='font-semibold text-lg'>
+                                        ID : {order?.paymentId?.orderId}
+                                    </div>
+                                    <div>
+                                        Customer's Name : {order?.user?.ownerName}
+                                    </div>
                                 </div>
-                                <div>
-                                    Customer's Name : {order?.user?.ownerName}
+                                <div className='flex flex-col justify-center m-4'>
+                                    {
+                                        order?.orderItems?.map((item) => (
+                                            <>
+                                                <div className='flex justify-between w-60 px-2'>
+                                                    <span className='flex gap-x-1 items-center '>
+                                                        {item?.quantity}
+                                                        <RxCross2 size={14} />
+                                                        {item?.item?.dishName}
+                                                    </span>
+                                                    <p className='flex w-20 justify-end'>
+                                                        $ {item?.item?.price * item?.quantity}
+                                                    </p>
+                                                </div>
+                                            </>
+                                        ))
+                                    }
+                                    <div className='flex justify-end bg-neutral-200 rounded-md mt-2 py-1 px-2 w-full'>
+                                        <span className='font-semibold text-sm'>
+                                            Total bill : $ {order?.totalAmount}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className='flex flex-col justify-center m-4'>
-                                {
-                                    order?.orderItems?.map((item) => (
-                                        <>
-                                            <div className='flex justify-between w-60 px-2'>
-                                                <span className='flex gap-x-1 items-center '>
-                                                    {item?.quantity}
-                                                    <RxCross2 size={14} />
-                                                    {item?.item?.dishName}
-                                                </span>
-                                                <p className='flex w-20 justify-end'>
-                                                    $ {item?.item?.price * item?.quantity}
-                                                </p>
-                                            </div>
-                                        </>
-                                    ))
-                                }
-                                <div className='flex justify-end bg-neutral-200 rounded-md mt-2 py-1 px-2 w-full'>
-                                    <span className='font-semibold text-sm'>
-                                        Total bill : $ {order?.totalAmount}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className='flex flex-col m-4 gap-y-2'>
-                                <label htmlFor="status" className='text-sm'>
-                                    Status
-                                </label>
-                                <select
-                                    name=""
-                                    id=""
-                                    value={order?.orderStatus}
-                                    onChange={(e) => { handleStatusChange(e, order?._id) }}
-                                    className='shadow-md border-none rounded-md mr-6'>
-                                    {/* <option value={order.orderStatus}>{order.orderStatus}</option> */}
-                                    <option value="pending">Pending</option>
-                                    <option value="confirmed">Confirmed</option>
-                                    <option value="shipping">Shipping</option>
-                                </select>
-                                <p className='mt-4 text-neutral-500 text-sm'>
-                                    
-                                    {order.deliveryman?`${order?.deliveryman?.ownerName} assigned `:'No deliveryman assigned yet'}
-                                </p>
                             </div>
 
+                            {/* Bottom Section: Status and Actions - Separated */}
+                            <div className='flex justify-between items-center px-6 py-4'>
+                                {/* Left: Status Display */}
+                                <div className='flex items-center gap-x-3'>
+                                    <span className='text-sm font-semibold text-gray-600'>Status:</span>
+                                    <span className={`px-5 py-2 rounded-lg text-sm font-bold ${
+                                        order?.orderStatus === 'pending' ? 'bg-yellow-200 text-yellow-900' :
+                                        order?.orderStatus === 'confirmed' ? 'bg-blue-200 text-blue-900' :
+                                        order?.orderStatus === 'ready' ? 'bg-orange-200 text-orange-900' :
+                                        order?.orderStatus === 'shipping' ? 'bg-purple-200 text-purple-900' :
+                                        order?.orderStatus === 'cancel' ? 'bg-red-200 text-red-900' :
+                                        'bg-gray-200 text-gray-900'
+                                    }`}>
+                                        {order?.orderStatus === 'pending' ? '🔵 PENDING' :
+                                         order?.orderStatus === 'confirmed' ? '✓ CONFIRMED' :
+                                         order?.orderStatus === 'ready' ? '📦 READY' :
+                                         order?.orderStatus === 'shipping' ? '🚁 SHIPPING' :
+                                         order?.orderStatus === 'cancel' ? '✕ CANCELLED' :
+                                         order?.orderStatus?.toUpperCase()}
+                                    </span>
+                                </div>
+
+                                {/* Right: Action Buttons */}
+                                <div className='flex gap-x-3'>
+                                    {order?.orderStatus === 'pending' && (
+                                        <>
+                                            <button
+                                                onClick={() => updateOrderStatus(order._id, 'confirmed')}
+                                                disabled={isUpdating}
+                                                className='bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-all shadow-md hover:shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                                            >
+                                                {isUpdating ? '⏳ Processing...' : '→ Confirm Order'}
+                                            </button>
+                                            <button
+                                                onClick={() => updateOrderStatus(order._id, 'cancel')}
+                                                disabled={isUpdating}
+                                                className='bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 transition-all shadow-md hover:shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                                            >
+                                                ✕ Cancel
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {order?.orderStatus === 'confirmed' && (
+                                        <>
+                                            <button
+                                                onClick={() => updateOrderStatus(order._id, 'ready')}
+                                                disabled={isUpdating}
+                                                className='bg-orange-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all shadow-md hover:shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                                            >
+                                                {isUpdating ? '⏳ Processing...' : '→ Mark as Ready'}
+                                            </button>
+                                            <button
+                                                onClick={() => updateOrderStatus(order._id, 'cancel')}
+                                                disabled={isUpdating}
+                                                className='bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 transition-all shadow-md hover:shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed'
+                                            >
+                                                ✕ Cancel
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {order?.orderStatus === 'ready' && (
+                                        <div className='bg-green-50 border-2 border-green-300 px-5 py-2 rounded-lg text-sm text-green-700 font-semibold'>
+                                            ✓ Waiting for drone pickup
+                                        </div>
+                                    )}
+
+                                    {order?.orderStatus === 'shipping' && (
+                                        <div className='bg-purple-50 border-2 border-purple-300 px-5 py-2 rounded-lg text-sm text-purple-700 font-semibold'>
+                                            🚁 Drone is delivering
+                                        </div>
+                                    )}
+
+                                    {order?.orderStatus === 'cancel' && (
+                                        <div className='bg-red-50 border-2 border-red-300 px-5 py-2 rounded-lg text-sm text-red-700 font-semibold'>
+                                            ✕ Order cancelled
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </>
                 )
                 )
             }
+
+            {/* Cancel Order Confirmation Modal */}
+            {showCancelModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-scale-in">
+                        {/* Modal Header */}
+                        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-t-2xl p-6">
+                            <div className="flex items-center justify-center">
+                                <div className="bg-white rounded-full p-3">
+                                    <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <h3 className="text-2xl font-bold text-white text-center mt-4">
+                                Cancel Order?
+                            </h3>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-6">
+                            <p className="text-gray-600 text-center mb-4">
+                                Are you sure you want to cancel this order?
+                            </p>
+
+                            {orderToCancel && (
+                                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-semibold text-gray-700">Order ID:</span>
+                                        <span className="text-sm text-gray-900">{orderToCancel?.paymentId?.orderId}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-semibold text-gray-700">Customer:</span>
+                                        <span className="text-sm text-gray-900">{orderToCancel?.user?.ownerName}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-semibold text-gray-700">Amount:</span>
+                                        <span className="text-sm font-bold text-gray-900">$ {orderToCancel?.totalAmount?.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
+                                <p className="text-sm text-yellow-800">
+                                    <span className="font-semibold">Note:</span> Customer will be notified and refunded within 3-5 business days.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="flex gap-3 p-6 pt-0">
+                            <button
+                                onClick={closeCancelModal}
+                                disabled={isUpdating}
+                                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Keep Order
+                            </button>
+                            <button
+                                onClick={confirmCancelOrder}
+                                disabled={isUpdating}
+                                className="flex-1 px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            >
+                                {isUpdating ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Cancelling...
+                                    </>
+                                ) : (
+                                    'Yes, Cancel Order'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 };
@@ -105,47 +285,60 @@ const PastOrder = ({ pastOrders }) => {
             {
                 pastOrders?.map((order) => (
                     <>
-                        <div className='flex justify-between mx-20 my-6 bg-white shadow-md rounded-md font-poppins'>
-                            <div className='flex flex-col m-4 p-2 gap-y-3'>
-                                <div className='font-semibold text-lg'>
-                                    ID : {order?.paymentId?.orderId}
-                                    {/* //Change this to payment order id */}
+                        <div className='flex flex-col mx-20 my-6 bg-white shadow-md rounded-md font-poppins'>
+                            {/* Top Section: Order Info */}
+                            <div className='flex justify-between border-b border-gray-200 pb-4'>
+                                <div className='flex flex-col m-4 p-2 gap-y-3'>
+                                    <div className='font-semibold text-lg'>
+                                        ID : {order?.paymentId?.orderId}
+                                    </div>
+                                    <div>
+                                        Customer's Name : {order?.user?.ownerName}
+                                    </div>
                                 </div>
-                                <div>
-                                    Customer's Name : {order?.user?.ownerName}
+                                <div className='flex flex-col justify-center m-4'>
+                                    {
+                                        order?.orderItems?.map((item) => (
+                                            <>
+                                                <div className='flex justify-between w-60 px-2'>
+                                                    <span className='flex gap-x-1 items-center '>
+                                                        {item?.quantity}
+                                                        <RxCross2 size={14} />
+                                                        {item?.item?.dishName}
+                                                    </span>
+                                                    <p className='flex w-20 justify-end'>
+                                                        $ {item?.item?.price * item?.quantity}
+                                                    </p>
+                                                </div>
+                                            </>
+                                        ))
+                                    }
+                                    <div className='flex justify-end bg-neutral-200 rounded-md mt-2 py-1 px-2 w-full'>
+                                        <span className='font-semibold text-sm'>
+                                            Total bill : $ {order?.totalAmount}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className='flex flex-col justify-center m-4'>
-                                {
-                                    order?.orderItems?.map((item) => (
-                                        <>
-                                            <div className='flex justify-between w-60 px-2'>
-                                                <span className='flex gap-x-1 items-center '>
-                                                    {item?.quantity}
-                                                    <RxCross2 size={14} />
-                                                    {item?.item?.dishName}
-                                                </span>
-                                                <p className='flex w-20 justify-end'>
-                                                    $ {item?.item?.price * item?.quantity}
-                                                </p>
-                                            </div>
-                                        </>
-                                    ))
-                                }
-                                <div className='flex justify-end bg-neutral-200 rounded-md mt-2 py-1 px-2 w-full'>
-                                    <span className='font-semibold text-sm'>
-                                        Total bill : $ {order?.totalAmount}
+
+                            {/* Bottom Section: Status Display */}
+                            <div className='flex items-center px-6 py-4'>
+                                <div className='flex items-center gap-x-3'>
+                                    <span className='text-sm font-semibold text-gray-600'>Status:</span>
+                                    <span className={`px-5 py-2 rounded-lg text-sm font-bold ${
+                                        order?.orderStatus === 'delivered' 
+                                            ? 'bg-green-200 text-green-900' 
+                                            : order?.orderStatus === 'cancel'
+                                            ? 'bg-red-200 text-red-900'
+                                            : 'bg-gray-200 text-gray-900'
+                                    }`}>
+                                        {order?.orderStatus === 'delivered' 
+                                            ? '✓ DELIVERED' 
+                                            : order?.orderStatus === 'cancel'
+                                            ? '✕ CANCELLED'
+                                            : order?.orderStatus?.toUpperCase()}
                                     </span>
                                 </div>
-                            </div>
-                            <div className='flex flex-col m-4 gap-y-2 mr-8'>
-                                <label htmlFor="status" className='text-sm'>
-                                    Status
-                                </label>
-                                <p className='text-neutral-500'>
-                                    delivered
-                                </p>
-
                             </div>
                         </div>
                     </>
@@ -182,8 +375,8 @@ const ResOrders = () => {
         getOrders();
     }, []);
 
-    const currentOrders = orders.filter((order) => order.orderStatus !== 'delivered');
-    const pastOrders = orders.filter((order) => order.orderStatus === 'delivered');
+    const currentOrders = orders.filter((order) => order.orderStatus !== 'delivered' && order.orderStatus !== 'cancel');
+    const pastOrders = orders.filter((order) => order.orderStatus === 'delivered' || order.orderStatus === 'cancel');
 
 
     return (
