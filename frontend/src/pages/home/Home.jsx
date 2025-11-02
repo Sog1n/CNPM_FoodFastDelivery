@@ -70,7 +70,7 @@ const Home = () => {
       </div>
 
       <h1 className="ml-36 mt-10 font-extrabold text-4xl font-display" data-aos="fade-right">
-        Restaurants for you
+        Restaurants for you 123
       </h1>
       <div className="hidden md:grid grid-cols-4 mx-16 my-6 pl-20 pt-6 pb-10 gap-y-12">
         {data.map((food, index) => (
