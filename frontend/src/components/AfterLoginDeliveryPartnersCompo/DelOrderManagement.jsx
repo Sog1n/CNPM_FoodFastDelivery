@@ -184,9 +184,17 @@ const DelOrderManagement = () => {
 
   return (
       <div className='bg-gray-100 ml-60 mt-[78px] min-h-screen pt-4 w-full font-poppins'>
-        <div className='flex justify-center items-center font-semibold text-lg'>
-          Your Orders
+        <div className='flex flex-col items-center mb-4'>
+          <h2 className='font-bold text-2xl text-gray-800'>Ready Orders for Pickup</h2>
+          <p className='text-sm text-gray-600 mt-2'>Assign drones to orders that are ready for delivery</p>
         </div>
+        {orders?.length === 0 ? (
+          <div className='flex flex-col items-center justify-center py-16'>
+            <div className='text-6xl mb-4'>📦</div>
+            <h3 className='text-xl font-semibold text-gray-700 mb-2'>No Ready Orders</h3>
+            <p className='text-gray-500'>There are no orders ready for pickup at the moment.</p>
+          </div>
+        ) : null}
         {orders?.map((order) => (
             <div key={order._id} className='flex flex-col bg-white shadow-md rounded-md font-poppins mx-8 my-6 pt-4'>
               <div className='flex justify-center items-center font-semibold text-lg'>
@@ -237,10 +245,10 @@ const DelOrderManagement = () => {
                       ))}
                     </select>
                     <button
-                        className='bg-blue-500 text-white rounded-md p-2'
+                        className='bg-blue-500 text-white rounded-md p-2 hover:bg-blue-600 transition-all font-semibold'
                         onClick={() => handleAssignDrone(order._id)}
                     >
-                      Assign Order to Drone
+                      Assign Drone & Start Shipping
                     </button>
                   </div>
                 </div>

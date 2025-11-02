@@ -50,7 +50,12 @@ const UsersCart = () => {
   //Fetch users addresses
   const fetchUserAddresses = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/addresses/deliveryaddress/${userId}`);
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/addresses/deliveryaddress/${userId}`,
+        {
+          withCredentials: true  // Important: Send cookies with request
+        }
+      );
       console.log(response.data);
       if (response.status === 200) {
         setUserAddress(response.data);

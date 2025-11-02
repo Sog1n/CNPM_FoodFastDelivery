@@ -15,6 +15,11 @@ const StatusBadge = ({ status }) => {
       textColor = 'text-blue-800';
       displayText = 'CONFIRMED';
       break;
+    case 'ready':
+      bgColor = 'bg-orange-200';
+      textColor = 'text-orange-900';
+      displayText = 'READY FOR PICKUP';
+      break;
     case 'shipping':
       bgColor = 'bg-purple-100';
       textColor = 'text-purple-800';
@@ -113,9 +118,10 @@ const [orderToCancel, setOrderToCancel] = useState(null);
   const statusPriority = {
     'pending': 1,
     'confirmed': 2,
-    'shipping': 3,
-    'delivered': 4,
-    'cancel': 5
+    'ready': 3,
+    'shipping': 4,
+    'delivered': 5,
+    'cancel': 6
   };
 
   // Filter orders by status
@@ -138,6 +144,7 @@ const [orderToCancel, setOrderToCancel] = useState(null);
     all: orders.length,
     pending: orders.filter(o => o.orderStatus === 'pending').length,
     confirmed: orders.filter(o => o.orderStatus === 'confirmed').length,
+    ready: orders.filter(o => o.orderStatus === 'ready').length,
     shipping: orders.filter(o => o.orderStatus === 'shipping').length,
     delivered: orders.filter(o => o.orderStatus === 'delivered').length,
     cancel: orders.filter(o => o.orderStatus === 'cancel').length,
@@ -147,6 +154,7 @@ const [orderToCancel, setOrderToCancel] = useState(null);
     { value: 'all', label: 'All Orders', color: 'text-gray-600' },
     { value: 'pending', label: 'Pending', color: 'text-yellow-600' },
     { value: 'confirmed', label: 'Confirmed', color: 'text-blue-600' },
+    { value: 'ready', label: 'Ready', color: 'text-orange-600' },
     { value: 'shipping', label: 'Shipping', color: 'text-purple-600' },
     { value: 'delivered', label: 'Delivered', color: 'text-green-600' },
     { value: 'cancel', label: 'Cancelled', color: 'text-red-600' },
