@@ -5,7 +5,8 @@ import {
   userOrder,
   createVNPayPayment,
   vnpayReturn,
-  vnpayIPN
+  vnpayIPN,
+  vnpayVerifyAndCreateOrder
 } from "../Controllers/payment.js";
 import { Payment } from "../models/PaymentModel.js";
 import {AuthenticateUser} from './UserRoutes.js'
@@ -26,6 +27,9 @@ router.get('/vnpay_return', vnpayReturn);
 
 // VNPay - IPN (Instant Payment Notification)
 router.get('/vnpay_ipn', vnpayIPN);
+
+// VNPay - Verify and create order
+router.post('/vnpay/verify-and-create', vnpayVerifyAndCreateOrder);
 
 // Get payment by orderId (for VNPay return)
 router.get('/vnpay/order/:orderId', async (req, res) => {

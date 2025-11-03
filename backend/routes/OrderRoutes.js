@@ -12,6 +12,17 @@ router.post('/newOrder', AuthenticateUser, async (req, res) => {
     try {
         const { restaurant, paymentId, deliveryAddress, orderItems, totalAmount } = req.body;
         console.log("data", req.body);
+
+        // Check if order with this paymentId already exists
+        const existingOrder = await OrderModel.findOne({ paymentId: paymentId });
+        if (existingOrder) {
+            console.log("Order already exists for this payment:", existingOrder._id);
+            return res.status(200).json({
+                message: "Order already created",
+                order: existingOrder
+            });
+        }
+
         const order = new OrderModel({
             user: req.UserId,
             restaurant,
@@ -31,6 +42,12 @@ router.post('/newOrder', AuthenticateUser, async (req, res) => {
         }
     } catch (error) {
         console.log(error);
+        // Handle duplicate key error
+        if (error.code === 11000) {
+            return res.status(200).json({
+                message: "Order already created for this payment"
+            });
+        }
         res.status(500).json({ error: 'Internal server error' });
     }
 });
