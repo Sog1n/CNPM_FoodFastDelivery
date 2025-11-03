@@ -25,6 +25,7 @@ const OrderSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref: "Payment",
         required: true,
+        unique: true, // Prevent duplicate orders with same payment
     },
     deliveryAddress: {
         type: Schema.Types.ObjectId,

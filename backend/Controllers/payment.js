@@ -191,26 +191,14 @@ export const vnpayReturn = async (req, res) => {
       const responseCode = vnp_Params['vnp_ResponseCode'];
 
       if (responseCode === '00') {
-        // Payment successful
+        // Payment successful - just redirect, let frontend handle order creation
         const orderId = vnp_Params['vnp_TxnRef'];
-        const amount = vnp_Params['vnp_Amount'] / 100; // Convert back to VND
         const transactionNo = vnp_Params['vnp_TransactionNo'];
+        const amount = vnp_Params['vnp_Amount'] / 100; // Convert back to VND
         const payDate = vnp_Params['vnp_PayDate'];
 
-        // Save to database
-        const paymentRecord = await Payment.create({
-          orderId: orderId,
-          ownerId: req.body.ownerId || vnp_Params['vnp_OrderInfo'], // You might want to store this in session
-          paymentId: transactionNo,
-          signature: secureHash,
-          amount: amount / 23000, // Convert VND back to USD
-          payStatus: "paid",
-          paymentMethod: "VNPay",
-          paymentDate: payDate
-        });
-
-        // Redirect to success page
-        res.redirect(`${process.env.FRONTEND_URL}/payment-success?orderId=${orderId}&transactionNo=${transactionNo}`);
+        // Redirect to success page with payment info
+        res.redirect(`${process.env.FRONTEND_URL}/payment-success?orderId=${orderId}&transactionNo=${transactionNo}&amount=${amount}&payDate=${payDate}&secureHash=${secureHash}`);
       } else {
         // Payment failed
         res.redirect(`${process.env.FRONTEND_URL}/payment-failed?code=${responseCode}`);
@@ -273,3 +261,45 @@ export const vnpayIPN = async (req, res) => {
     res.status(500).json({ RspCode: '99', Message: 'Unknown error' });
   }
 };
+
+// VNPay - Verify and create order
+export const vnpayVerifyAndCreateOrder = async (req, res) => {
+  try {
+    const { orderId, transactionNo, amount, payDate, secureHash, ownerId, orderItems, useraddress } = req.body;
+
+    // Check if payment already exists
+    const existingPayment = await Payment.findOne({ orderId: orderId });
+
+    if (existingPayment) {
+      return res.status(200).json({
+        success: true,
+        message: 'Order already created',
+        paymentId: existingPayment._id
+      });
+    }
+
+    // Create payment record
+    const paymentRecord = await Payment.create({
+      orderId: orderId,
+      ownerId: ownerId,
+      paymentId: transactionNo,
+      signature: secureHash,
+      amount: amount / 23000, // Convert VND back to USD
+      orderItems: orderItems,
+      useraddress: useraddress,
+      payStatus: "paid",
+      paymentMethod: "VNPay",
+      paymentDate: payDate
+    });
+
+    res.json({
+      success: true,
+      message: "VNPay payment verified and order created successfully",
+      paymentId: paymentRecord._id
+    });
+  } catch (error) {
+    console.error("Error verifying VNPay payment:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+

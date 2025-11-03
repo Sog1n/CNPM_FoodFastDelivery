@@ -17,38 +17,64 @@ const PaymentSuccess = () => {
   useEffect(() => {
     const createOrderFromVNPay = async () => {
       try {
+        // Check if already processing this order
+        const processingKey = `processing_${orderId}`;
+        if (sessionStorage.getItem(processingKey)) {
+          console.log('Order already being processed');
+          setLoading(false);
+          return;
+        }
+
         // Get pending order from session storage
         const pendingOrderData = sessionStorage.getItem('pendingOrder');
 
-        if (pendingOrderData) {
-          const orderData = JSON.parse(pendingOrderData);
+        if (!pendingOrderData) {
+          setLoading(false);
+          return;
+        }
 
-          // Get the payment record
-          const paymentResponse = await axios.get(
-            `${import.meta.env.VITE_API_URL}/api/payment/vnpay/order/${orderId}`,
+        // Set processing flag immediately
+        sessionStorage.setItem(processingKey, 'true');
+
+        const orderData = JSON.parse(pendingOrderData);
+        const amount = searchParams.get('amount');
+        const payDate = searchParams.get('payDate');
+        const secureHash = searchParams.get('secureHash');
+
+        // Step 1: Verify payment and create payment record
+        const verifyResponse = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/payment/vnpay/verify-and-create`,
+          {
+            orderId,
+            transactionNo,
+            amount,
+            payDate,
+            secureHash,
+            ownerId: orderData.userId,
+            orderItems: orderData.orderItems,
+            useraddress: orderData.deliveryAddress
+          },
+          { withCredentials: true }
+        );
+
+        if (verifyResponse.data.success) {
+          // Step 2: Create order with payment ID
+          const fullOrderData = {
+            ...orderData,
+            paymentId: verifyResponse.data.paymentId
+          };
+
+          await axios.post(
+            `${import.meta.env.VITE_API_URL}/api/order/newOrder`,
+            fullOrderData,
             { withCredentials: true }
           );
 
-          if (paymentResponse.data) {
-            // Create order with payment ID
-            const fullOrderData = {
-              ...orderData,
-              paymentId: paymentResponse.data._id
-            };
+          // Clear cart and session storage
+          dispatch(clearCart({ userId: orderData.userId }));
+          sessionStorage.removeItem('pendingOrder');
+          // Keep processing flag to prevent reprocessing
 
-            await axios.post(
-              `${import.meta.env.VITE_API_URL}/api/order/newOrder`,
-              fullOrderData,
-              { withCredentials: true }
-            );
-
-            // Clear cart and session storage
-            dispatch(clearCart({ userId: orderData.userId }));
-            sessionStorage.removeItem('pendingOrder');
-
-            setLoading(false);
-          }
-        } else {
           setLoading(false);
         }
       } catch (err) {
@@ -63,7 +89,7 @@ const PaymentSuccess = () => {
     } else {
       setLoading(false);
     }
-  }, [orderId, transactionNo, dispatch]);
+  }, [orderId, transactionNo, dispatch, searchParams]);
 
   const handleViewOrders = () => {
     navigate('/UsersOrders');
