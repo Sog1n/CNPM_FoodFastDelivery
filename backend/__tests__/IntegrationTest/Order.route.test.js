@@ -418,10 +418,17 @@ describe('Order Routes', () => {
 
     describe('GET /api/orders/getAllDeliveredOrders', () => {
         it('should get all delivered orders', async () => {
+            // Create unique payment for first order
+            const payment1 = await PaymentModel.create({
+                orderId: 'ORDER_DELIVERED_1',
+                amount: 100,
+                status: 'completed'
+            });
+
             await OrderModel.create({
                 user: testUser._id,
                 restaurant: testRestaurant._id,
-                paymentId: testPayment._id,
+                paymentId: payment1._id,
                 deliveryAddress: testAddress._id,
                 orderItems: [
                     {
@@ -436,10 +443,17 @@ describe('Order Routes', () => {
                 orderStatus: 'delivered'
             });
 
+            // Create unique payment for second order
+            const payment2 = await PaymentModel.create({
+                orderId: 'ORDER_PENDING_1',
+                amount: 60,
+                status: 'completed'
+            });
+
             await OrderModel.create({
                 user: testUser._id,
                 restaurant: testRestaurant._id,
-                paymentId: testPayment._id,
+                paymentId: payment2._id,
                 deliveryAddress: testAddress._id,
                 orderItems: [
                     {
@@ -467,10 +481,17 @@ describe('Order Routes', () => {
 
     describe('GET /api/orders/getAllOrders', () => {
         it('should get all ready orders without assigned drone', async () => {
+            // Create unique payment for first order
+            const payment3 = await PaymentModel.create({
+                orderId: 'ORDER_READY_1',
+                amount: 100,
+                status: 'completed'
+            });
+
             await OrderModel.create({
                 user: testUser._id,
                 restaurant: testRestaurant._id,
-                paymentId: testPayment._id,
+                paymentId: payment3._id,
                 deliveryAddress: testAddress._id,
                 orderItems: [
                     {
@@ -486,10 +507,17 @@ describe('Order Routes', () => {
                 drone: null
             });
 
+            // Create unique payment for second order
+            const payment4 = await PaymentModel.create({
+                orderId: 'ORDER_READY_2',
+                amount: 60,
+                status: 'completed'
+            });
+
             await OrderModel.create({
                 user: testUser._id,
                 restaurant: testRestaurant._id,
-                paymentId: testPayment._id,
+                paymentId: payment4._id,
                 deliveryAddress: testAddress._id,
                 orderItems: [
                     {
@@ -518,10 +546,17 @@ describe('Order Routes', () => {
 
     describe('GET /api/orders/getAllAcceptedOrders', () => {
         it('should get all orders assigned to drones', async () => {
+            // Create unique payment for first order
+            const payment5 = await PaymentModel.create({
+                orderId: 'ORDER_SHIPPING_1',
+                amount: 100,
+                status: 'completed'
+            });
+
             await OrderModel.create({
                 user: testUser._id,
                 restaurant: testRestaurant._id,
-                paymentId: testPayment._id,
+                paymentId: payment5._id,
                 deliveryAddress: testAddress._id,
                 orderItems: [
                     {
@@ -537,10 +572,17 @@ describe('Order Routes', () => {
                 drone: testDrone._id
             });
 
+            // Create unique payment for second order
+            const payment6 = await PaymentModel.create({
+                orderId: 'ORDER_READY_3',
+                amount: 60,
+                status: 'completed'
+            });
+
             await OrderModel.create({
                 user: testUser._id,
                 restaurant: testRestaurant._id,
-                paymentId: testPayment._id,
+                paymentId: payment6._id,
                 deliveryAddress: testAddress._id,
                 orderItems: [
                     {

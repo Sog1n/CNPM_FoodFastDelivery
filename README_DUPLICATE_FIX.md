@@ -120,11 +120,17 @@ project/
 ### Frontend (1 file)
 - [x] PaymentSuccess.jsx
 
-### Documentation (4 files)
+### Documentation (5 files)
 - [x] DUPLICATE_FIX_SUMMARY.md
 - [x] VNPAY_DUPLICATE_FIX.md
 - [x] QUICK_FIX_DUPLICATE.md
 - [x] TEST_DUPLICATE_FIX.md
+- [x] TEST_FIX_ORDER_ROUTES.md (Test fixes)
+
+### Tests (1 file)
+- [x] __tests__/IntegrationTest/Order.route.test.js
+  - ✅ 23/23 tests passing
+  - Fixed 3 tests that failed due to unique constraint
 
 ---
 
