@@ -7,6 +7,7 @@ const CurrentOrder = ({ currentOrders, getOrders }) => {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [orderToCancel, setOrderToCancel] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [activeStatusTab, setActiveStatusTab] = useState('all');
 
     //Update order status
     const updateOrderStatus = async (orderId, newstatus) => {
@@ -68,11 +69,125 @@ const CurrentOrder = ({ currentOrders, getOrders }) => {
         setOrderToCancel(null);
     }
 
+    // Filter orders based on active status tab
+    const filteredOrders = activeStatusTab === 'all'
+        ? currentOrders
+        : currentOrders.filter(order => order.orderStatus === activeStatusTab);
+
+    // Count orders by status
+    const orderCounts = {
+        all: currentOrders.length,
+        pending: currentOrders.filter(o => o.orderStatus === 'pending').length,
+        confirmed: currentOrders.filter(o => o.orderStatus === 'confirmed').length,
+        ready: currentOrders.filter(o => o.orderStatus === 'ready').length,
+        shipping: currentOrders.filter(o => o.orderStatus === 'shipping').length,
+    };
 
     return (
         <>
+            {/* Status Filter Tabs */}
+            <div className='mx-20 my-6'>
+                <div className='flex gap-3 p-4 bg-white rounded-lg shadow-md overflow-x-auto'>
+                    <button
+                        onClick={() => setActiveStatusTab('all')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+                            activeStatusTab === 'all'
+                                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        <span>📋 All Orders</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            activeStatusTab === 'all' ? 'bg-white text-green-600' : 'bg-gray-300 text-gray-700'
+                        }`}>
+                            {orderCounts.all}
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveStatusTab('pending')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+                            activeStatusTab === 'pending'
+                                ? 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-lg transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        <span>🔵 Pending</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            activeStatusTab === 'pending' ? 'bg-white text-yellow-600' : 'bg-gray-300 text-gray-700'
+                        }`}>
+                            {orderCounts.pending}
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveStatusTab('confirmed')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+                            activeStatusTab === 'confirmed'
+                                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        <span>✓ Confirmed</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            activeStatusTab === 'confirmed' ? 'bg-white text-blue-600' : 'bg-gray-300 text-gray-700'
+                        }`}>
+                            {orderCounts.confirmed}
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveStatusTab('ready')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+                            activeStatusTab === 'ready'
+                                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        <span>📦 Ready</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            activeStatusTab === 'ready' ? 'bg-white text-orange-600' : 'bg-gray-300 text-gray-700'
+                        }`}>
+                            {orderCounts.ready}
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveStatusTab('shipping')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap flex items-center gap-2 ${
+                            activeStatusTab === 'shipping'
+                                ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg transform scale-105'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        <span>🚁 Shipping</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            activeStatusTab === 'shipping' ? 'bg-white text-purple-600' : 'bg-gray-300 text-gray-700'
+                        }`}>
+                            {orderCounts.shipping}
+                        </span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Empty State */}
+            {filteredOrders.length === 0 && (
+                <div className='mx-20 my-10 bg-white rounded-lg shadow-md p-12 text-center'>
+                    <div className='text-6xl mb-4'>📭</div>
+                    <h3 className='text-xl font-semibold text-gray-700 mb-2'>
+                        No {activeStatusTab === 'all' ? '' : activeStatusTab} orders
+                    </h3>
+                    <p className='text-gray-500'>
+                        {activeStatusTab === 'all'
+                            ? 'All orders are completed or cancelled'
+                            : `No orders in ${activeStatusTab} status at the moment`}
+                    </p>
+                </div>
+            )}
+
+            {/* Orders List */}
             {
-                currentOrders?.map((order) => (
+                filteredOrders?.map((order) => (
                     <>
                         <div className='flex flex-col mx-20 my-6 bg-white shadow-md rounded-md font-poppins'>
                             {/* Top Section: Order Info */}
