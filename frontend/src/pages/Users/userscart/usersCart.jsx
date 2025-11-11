@@ -93,12 +93,21 @@ const UsersCart = () => {
   const handleDeliveryAddress = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/addresses/deliveryaddress`, {
-        address,
-        country,
-        state,
-        city,
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/addresses/deliveryaddress`,
+        {
+          address,
+          country,
+          state,
+          city,
+        },
+        {
+          withCredentials: true,  // CRITICAL: Send cookies with JWT token
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
       console.log(response);
       setShowCartTotal(true);
       setShowAddressPopup(false);

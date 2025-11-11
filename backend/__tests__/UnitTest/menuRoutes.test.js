@@ -82,39 +82,7 @@ describe('MenuRoutes Unit Tests', () => {
   describe('POST /ResMenu', () => {
     // Note: File upload with multer is complex to mock in unit tests
     // This test would be better as an integration test with real multer middleware
-    it.skip('should create a new menu item with image upload', async () => {
-      const mockCloudinaryResponse = { url: 'https://cloudinary.com/image.jpg' };
-      mockUploadOnCloudinary.mockResolvedValue(mockCloudinaryResponse);
 
-      const mockMenuItem = {
-        _id: 'menu1',
-        dishName: 'Pizza',
-        price: 15.99,
-        description: 'Delicious pizza',
-        cuisineName: 'Italian',
-        image: mockCloudinaryResponse.url,
-        ownerId: 'res123'
-      };
-      MenuItemModel.create = jest.fn().mockResolvedValue(mockMenuItem);
-
-      const res = await request(app)
-        .post('/ResMenu')
-        .set('Cookie', [`token=${resToken}`])
-        .set('x-mock-file', 'true')
-        .send({
-          dishName: 'Pizza',
-          price: 15.99,
-          description: 'Delicious pizza',
-          cuisineName: 'Italian'
-        });
-
-      expect(res.status).toBe(200);
-      expect(res.body.dishName).toBe('Pizza');
-      expect(res.body.image).toBe(mockCloudinaryResponse.url);
-      expect(mockUploadOnCloudinary).toHaveBeenCalledWith('/tmp/test-image.jpg');
-      expect(fs.unlinkSync).toHaveBeenCalledWith('/tmp/test-image.jpg');
-      expect(MenuItemModel.create).toHaveBeenCalled();
-    });
 
     it('should return 400 when cloudinary upload fails', async () => {
       mockUploadOnCloudinary.mockResolvedValue(null);
@@ -276,30 +244,7 @@ describe('MenuRoutes Unit Tests', () => {
 
     // Note: File upload with multer is complex to mock in unit tests
     // This test would be better as an integration test with real multer middleware
-    it.skip('should update menu item with new image', async () => {
-      mockUploadOnCloudinary.mockResolvedValue({ url: 'https://cloudinary.com/new-image.jpg' });
-      const updatedItem = {
-        _id: 'm1',
-        dishName: 'Updated Pizza',
-        image: 'https://cloudinary.com/new-image.jpg'
-      };
-      MenuItemModel.findByIdAndUpdate = jest.fn().mockResolvedValue(updatedItem);
 
-      const res = await request(app)
-        .patch('/ResMenu/m1')
-        .set('Cookie', [`token=${resToken}`])
-        .set('x-mock-file', 'true')
-        .send({
-          dishName: 'Updated Pizza',
-          price: 18.99,
-          description: 'Updated description',
-          cuisineName: 'Italian'
-        });
-
-      expect(res.status).toBe(200);
-      expect(mockUploadOnCloudinary).toHaveBeenCalled();
-      expect(fs.unlinkSync).toHaveBeenCalled();
-    });
 
     it('should return 404 when menu item not found', async () => {
       MenuItemModel.findByIdAndUpdate = jest.fn().mockResolvedValue(null);
