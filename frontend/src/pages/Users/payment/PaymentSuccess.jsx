@@ -96,7 +96,7 @@ const PaymentSuccess = () => {
   };
 
   const handleBackToHome = () => {
-    navigate('/');
+    navigate('/UsersRestaurant');
   };
 
   if (loading) {
