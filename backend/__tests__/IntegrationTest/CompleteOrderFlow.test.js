@@ -17,6 +17,7 @@ import request from 'supertest';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import UserModel from '../../models/UserModel.js';
 import RestaurantModel from '../../models/ResModel.js';
 import MenuItemModel from '../../models/MenuModel.js';
@@ -54,9 +55,13 @@ describe('INTEGRATION TEST: Complete Order Flow - Activity Diagram', () => {
   beforeAll(async () => {
     // Connect to test database
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://nguyenphuongvinh49_db_user:abc_123@cluster0.egrkmta.mongodb.net/FoodFast?retryWrites=true&w=majority&appName=Cluster0', {
-        serverSelectionTimeoutMS: 30000
-      });
+      // Use mongodb-memory-server for deterministic tests on CI (GitHub Actions)
+      // This avoids relying on external Atlas DB which may be unreachable or slow on CI
+      const mongoServer = await MongoMemoryServer.create();
+      const mongoUri = mongoServer.getUri();
+      // store mongoServer on the mongoose connection object so we can stop it in afterAll
+      mongoose._mongoServerInstance = mongoServer;
+      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 30000 });
     }
 
     // Clean up test data
@@ -79,6 +84,10 @@ describe('INTEGRATION TEST: Complete Order Flow - Activity Diagram', () => {
 
     if (mongoose.connection.readyState !== 0) {
       await mongoose.connection.close();
+      // stop the in-memory mongo server if created
+      if (mongoose._mongoServerInstance) {
+        await mongoose._mongoServerInstance.stop();
+      }
     }
   }, 30000);
 

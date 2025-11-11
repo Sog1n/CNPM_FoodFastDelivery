@@ -15,11 +15,11 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  testTimeout: 10000,
+  testTimeout: 30000,
+  setupFiles: ['<rootDir>/__tests__/IntegrationTest/testEnvSetup.js'],
   verbose: true,
   forceExit: true,
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true
 };
-
