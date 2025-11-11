@@ -54,7 +54,7 @@ describe('INTEGRATION TEST: Complete Order Flow - Activity Diagram', () => {
   beforeAll(async () => {
     // Connect to test database
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/fooddelivery_test', {
+      await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://nguyenphuongvinh49_db_user:abc_123@cluster0.egrkmta.mongodb.net/FoodFast?retryWrites=true&w=majority&appName=Cluster0', {
         serverSelectionTimeoutMS: 30000
       });
     }
