@@ -45,7 +45,7 @@ router.post('/UserLogin', async (req, res) => {
   try {
     const user = await UserModel.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "User is not registered" });
+      return res.status(300).json({ message: "User is not registered" });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
