@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Grid, Card, CardContent, Typography } from '@mui/material';
 import UserImage from '../../assets/graph.jpeg'; // Ensure the path is correct
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +13,107 @@ const CurrentOrder = ({ orders, getOrders }) => {
   const currentOrders = orders.filter((order) => order.orderStatus === 'shipping' && order.drone !== null);
 
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
+
+  // Use ref to track which orders have been initialized (CRITICAL FIX)
+  const initializedOrdersRef = useRef(new Set());
+
+  const [deliveryProgress, setDeliveryProgress] = useState(() => {
+    // Load progress from localStorage on mount
+    const saved = localStorage.getItem('deliveryProgress');
+    const parsed = saved ? JSON.parse(saved) : {};
+    console.log('🔄 Loading delivery progress from localStorage:', parsed);
+
+    // Mark loaded orders as initialized
+    Object.keys(parsed).forEach(orderId => {
+      initializedOrdersRef.current.add(orderId);
+    });
+
+    return parsed;
+  });
   const delId = localStorage.getItem('delId');
+
+  // Initialize progress for NEW orders only (don't reset existing ones)
+  useEffect(() => {
+    let hasNewOrders = false;
+
+    currentOrders.forEach(order => {
+      // Check if this order has NOT been initialized yet
+      if (!initializedOrdersRef.current.has(order._id)) {
+        console.log(`✨ Initializing NEW order ${order._id} progress to 0%`);
+        hasNewOrders = true;
+
+        // Mark as initialized IMMEDIATELY to prevent double-init
+        initializedOrdersRef.current.add(order._id);
+
+        setDeliveryProgress(prev => {
+          const updated = { ...prev, [order._id]: 0 };
+          localStorage.setItem('deliveryProgress', JSON.stringify(updated));
+          return updated;
+        });
+      } else {
+        console.log(`✅ Order ${order._id} already initialized (in ref)`);
+      }
+    });
+
+    // Clean up progress for orders that are no longer in currentOrders
+    const currentOrderIds = new Set(currentOrders.map(o => o._id));
+    const progressKeys = Object.keys(deliveryProgress);
+
+    progressKeys.forEach(orderId => {
+      if (!currentOrderIds.has(orderId)) {
+        console.log(`🗑️ Cleaning up completed/removed order ${orderId}`);
+
+        // Remove from tracking
+        initializedOrdersRef.current.delete(orderId);
+
+        setDeliveryProgress(prev => {
+          const updated = { ...prev };
+          delete updated[orderId];
+          localStorage.setItem('deliveryProgress', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    });
+
+  }, [currentOrders.length, currentOrders.map(o => o._id).join(',')]); // Dependency stays but ref prevents re-init
+
+  // Simulate delivery progress (auto-increment every 2 seconds)
+  useEffect(() => {
+    console.log('🚀 Starting delivery progress interval for orders:', currentOrders.map(o => o._id));
+
+    const interval = setInterval(() => {
+      setDeliveryProgress(prev => {
+        const updated = { ...prev };
+        let hasChanges = false;
+
+        currentOrders.forEach(order => {
+          const currentProgress = updated[order._id];
+
+          // Only update if progress exists and is less than 100
+          if (currentProgress !== undefined && currentProgress < 100) {
+            // Increment by random amount between 5-15% for realistic simulation
+            const increment = Math.floor(Math.random() * 11) + 5;
+            const newProgress = Math.min(currentProgress + increment, 100);
+            updated[order._id] = newProgress;
+            console.log(`📈 Order ${order._id}: ${currentProgress}% → ${newProgress}%`);
+            hasChanges = true;
+          }
+        });
+
+        if (hasChanges) {
+          console.log('💾 Saving updated progress to localStorage:', updated);
+          localStorage.setItem('deliveryProgress', JSON.stringify(updated));
+        }
+
+        return hasChanges ? updated : prev;
+      });
+    }, 2000); // Update every 2 seconds
+
+    return () => {
+      console.log('🛑 Clearing delivery progress interval');
+      clearInterval(interval);
+    };
+  }, [currentOrders.length]); // Only recreate when number of orders changes
 
   //Update order status to delivered
   const updateOrderStatus = async (orderId, droneId) => {
@@ -28,6 +128,16 @@ const CurrentOrder = ({ orders, getOrders }) => {
         }
       );
       console.log('status updated', res.data);
+
+      // Clean up progress for this order from EVERYWHERE
+      initializedOrdersRef.current.delete(orderId); // Remove from tracking
+
+      setDeliveryProgress(prev => {
+        const updated = { ...prev };
+        delete updated[orderId];
+        localStorage.setItem('deliveryProgress', JSON.stringify(updated));
+        return updated;
+      });
 
       // Refresh orders after successful update
       getOrders(delId);
@@ -131,10 +241,44 @@ const CurrentOrder = ({ orders, getOrders }) => {
                   </div>
                 </div>
 
+                {/* Delivery Progress Bar */}
+                <div className='mb-3'>
+                  <div className='flex justify-between items-center mb-2'>
+                    <span className='text-sm font-semibold text-gray-700'>
+                      🚁 Delivery Progress
+                    </span>
+                    <span className='text-sm font-bold text-purple-600'>
+                      {deliveryProgress[order._id] || 0}%
+                    </span>
+                  </div>
+                  <div className='w-full bg-gray-200 rounded-full h-4 overflow-hidden'>
+                    <div
+                      className='h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500 ease-out flex items-center justify-end pr-2'
+                      style={{ width: `${deliveryProgress[order._id] || 0}%` }}
+                    >
+                      {deliveryProgress[order._id] >= 15 && (
+                        <span className='text-xs text-white font-bold'>
+                          {deliveryProgress[order._id] === 100 ? '✓' : '🚁'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {deliveryProgress[order._id] < 100 && (
+                    <p className='text-xs text-gray-500 mt-1'>
+                      Drone is en route to destination...
+                    </p>
+                  )}
+                  {deliveryProgress[order._id] === 100 && (
+                    <p className='text-xs text-green-600 font-semibold mt-1'>
+                      ✓ Delivery completed! You can now mark as delivered.
+                    </p>
+                  )}
+                </div>
+
                 <button
                   className='bg-green-500 text-white rounded-lg p-3 font-semibold hover:bg-green-600 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center'
                   onClick={() => updateOrderStatus(order._id, order?.drone?._id)}
-                  disabled={updatingOrderId === order._id}
+                  disabled={updatingOrderId === order._id || (deliveryProgress[order._id] || 0) < 100}
                 >
                   {updatingOrderId === order._id ? (
                     <>
@@ -145,7 +289,13 @@ const CurrentOrder = ({ orders, getOrders }) => {
                       Updating...
                     </>
                   ) : (
-                    <>✓ Mark as Delivered</>
+                    <>
+                      {(deliveryProgress[order._id] || 0) < 100 ? (
+                        <>⏳ Waiting for delivery completion...</>
+                      ) : (
+                        <>✓ Mark as Delivered</>
+                      )}
+                    </>
                   )}
                 </button>
               </div>
