@@ -510,20 +510,6 @@ cd backend
 npm run lint
 ```
 
-## 📄 License
-
-This project is licensed under the ISC License.
-
-## 👥 Authors & Contributors
-
-- **Development Team** - Initial work and maintenance
-
-## 📞 Support
-
-For support and questions:
-- Create an issue in the GitHub repository
-- Contact: [your-email@example.com]
-
 ## 🙏 Acknowledgments
 
 - Material-UI for the component library
