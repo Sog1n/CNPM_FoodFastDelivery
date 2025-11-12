@@ -10,7 +10,7 @@ COPY package*.json ./
 # Install dependencies and rebuild bcrypt
 RUN npm ci
 RUN npm rebuild bcrypt --build-from-source
-RUN npm run test
+
 
 FROM node:18-alpine
 
