@@ -3,6 +3,7 @@ import { AuthenticateUser } from './UserRoutes.js';
 import { Authenticate } from './ResRoutes.js'
 import { AuthenticateDel } from './DelRoutes.js'
 import OrderModel from '../models/OrderModel.js';
+import { metrics } from '../middleware/prometheus.middleware.js';
 
 const router = express.Router();
 
