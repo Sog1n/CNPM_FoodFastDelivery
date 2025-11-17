@@ -13,6 +13,7 @@ import addressRoutes from './routes/AddressRoutes.js';
 import orderRoutes from './routes/OrderRoutes.js';
 import MapAddressRoutes from './routes/MapAddressRoutes.js'
 import DroneRoutes from "./routes/DroneRoutes.js";
+import { prometheusMiddleware, metricsHandler, metrics } from './middleware/prometheus.middleware.js';
 
 dotenv.config();
 
@@ -20,6 +21,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
+
+// Prometheus middleware - đặt trước CORS
+app.use(prometheusMiddleware);
 
 // CORS configuration cho production
 const allowedOrigins = [
@@ -38,6 +42,10 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+
+// Metrics endpoint cho Prometheus
+app.get('/metrics', metricsHandler);
+
 // CORS configuration cho production
 app.use(cors({
     origin: function (origin, callback) {
@@ -91,8 +99,12 @@ app.use("/api/drones", DroneRoutes);
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
         console.log("MongoDB connected");
+        metrics.setDbStatus(true); // Track DB connection status
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server running on port ${PORT}`);
         });
     })
-    .catch((error) => console.error("MongoDB connection error:", error));
+    .catch((error) => {
+        console.error("MongoDB connection error:", error);
+        metrics.setDbStatus(false); // Track DB connection failure
+    });
