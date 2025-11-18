@@ -3,9 +3,11 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from 'nodemailer';
 import RestaurantModel from "../models/ResModel.js";
+import { metrics } from '../middleware/prometheus.middleware.js';
 import { AuthenticateUser } from "./UserRoutes.js";
 import dotenv from "dotenv";
 dotenv.config();
+
 const router = express.Router();
 
 // Register Route
@@ -33,6 +35,10 @@ router.post('/res/register', async (req, res) => {
     });
 
     await user.save();
+
+    // ✅ Track metric: New restaurant registered
+    metrics.recordRestaurant('active');
+
     return res.json({ status: true, message: "User registered successfully" });
   } catch (err) {
     console.error(err.message);

@@ -1,5 +1,6 @@
 import express from "express";
 import DroneModel from "../models/DroneModel.js";
+import { metrics } from '../middleware/prometheus.middleware.js';
 
 const router = express.Router();
 
@@ -8,7 +9,22 @@ router.post("/", async (req, res) => {
     try {
         const drone = new DroneModel(req.body);
         await drone.save();
+
+        // Send response first to avoid blocking the request
         res.status(201).json(drone);
+
+        // ✅ Track metric: New drone added to fleet (in background)
+        setImmediate(async () => {
+            try {
+                const activeDronesCount = await DroneModel.countDocuments({ status: 'AVAILABLE' });
+                if (metrics && typeof metrics.setActiveDrones === "function") {
+                    metrics.setActiveDrones(activeDronesCount);
+                }
+            } catch (err) {
+                // Silently ignore metric errors to not affect the main flow
+                console.error('Error updating drone metrics:', err.message);
+            }
+        });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -51,7 +67,22 @@ router.delete("/:id", async (req, res) => {
     try {
         const drone = await DroneModel.findByIdAndDelete(req.params.id);
         if (!drone) return res.status(404).json({ error: "Drone not found" });
+
+        // Send response first to avoid blocking the request
         res.json({ message: "Drone deleted" });
+
+        // ✅ Track metric: Update active drones count after deletion (in background)
+        setImmediate(async () => {
+            try {
+                const activeDronesCount = await DroneModel.countDocuments({ status: 'AVAILABLE' });
+                if (metrics && typeof metrics.setActiveDrones === "function") {
+                    metrics.setActiveDrones(activeDronesCount);
+                }
+            } catch (err) {
+                // Silently ignore metric errors to not affect the main flow
+                console.error('Error updating drone metrics:', err.message);
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -67,7 +98,22 @@ router.patch("/:id/status", async (req, res) => {
             { new: true, runValidators: true }
         );
         if (!drone) return res.status(404).json({ error: "Drone not found" });
+
+        // Send response first to avoid blocking the request
         res.json(drone);
+
+        // ✅ Track metric: Update active drones count (in background)
+        setImmediate(async () => {
+            try {
+                const activeDronesCount = await DroneModel.countDocuments({ status: 'AVAILABLE' });
+                if (metrics && typeof metrics.setActiveDrones === "function") {
+                    metrics.setActiveDrones(activeDronesCount);
+                }
+            } catch (err) {
+                // Silently ignore metric errors to not affect the main flow
+                console.error('Error updating drone metrics:', err.message);
+            }
+        });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

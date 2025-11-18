@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import nodemailer from 'nodemailer';
 import UserModel from "../models/UserModel.js";
 import RestaurantModel from "../models/ResModel.js";
+import { metrics } from '../middleware/prometheus.middleware.js';
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -30,6 +31,10 @@ router.post('/user/register', async (req, res) => {
     });
 
     await user.save();
+
+    // ✅ Track metric: New user registered
+    metrics.recordUser('customer');
+
     return res.json({ status: true, message: "User registered successfully" });
   } catch (err) {
     console.error(err.message);
