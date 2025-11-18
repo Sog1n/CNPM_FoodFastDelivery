@@ -1,5 +1,6 @@
 import express from "express";
 import DroneModel from "../models/DroneModel.js";
+import { metrics } from '../middleware/prometheus.middleware.js';
 
 const router = express.Router();
 
@@ -8,6 +9,12 @@ router.post("/", async (req, res) => {
     try {
         const drone = new DroneModel(req.body);
         await drone.save();
+
+        // ✅ Track metric: New drone added to fleet
+        // Update active drones count
+        const activeDronesCount = await DroneModel.countDocuments({ status: 'AVAILABLE' });
+        metrics.setActiveDrones(activeDronesCount);
+
         res.status(201).json(drone);
     } catch (err) {
         res.status(400).json({ error: err.message });
@@ -51,6 +58,11 @@ router.delete("/:id", async (req, res) => {
     try {
         const drone = await DroneModel.findByIdAndDelete(req.params.id);
         if (!drone) return res.status(404).json({ error: "Drone not found" });
+
+        // ✅ Track metric: Update active drones count after deletion
+        const activeDronesCount = await DroneModel.countDocuments({ status: 'AVAILABLE' });
+        metrics.setActiveDrones(activeDronesCount);
+
         res.json({ message: "Drone deleted" });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -67,6 +79,11 @@ router.patch("/:id/status", async (req, res) => {
             { new: true, runValidators: true }
         );
         if (!drone) return res.status(404).json({ error: "Drone not found" });
+
+        // ✅ Track metric: Update active drones count
+        const activeDronesCount = await DroneModel.countDocuments({ status: 'AVAILABLE' });
+        metrics.setActiveDrones(activeDronesCount);
+
         res.json(drone);
     } catch (err) {
         res.status(400).json({ error: err.message });
