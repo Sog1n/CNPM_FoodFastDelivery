@@ -251,6 +251,20 @@ export const metrics = {
             usersTotal.inc({ role: 'customer' }, users.length);
             console.log(`  👥 Loaded ${users.length} users`);
 
+            // Load and count active drones
+            try {
+                const { default: DroneModel } = await import('../models/DroneModel.js');
+                const drones = await DroneModel.find({});
+                const activeDrones = drones.filter(drone =>
+                    drone.status === 'AVAILABLE' || drone.status === 'IN_DELIVERY'
+                );
+                dronesActive.set(activeDrones.length);
+                console.log(`  🚁 Loaded ${activeDrones.length} active drones (out of ${drones.length} total)`);
+            } catch (droneError) {
+                console.error('  ⚠️ Could not load drones:', droneError.message);
+                dronesActive.set(0);
+            }
+
             console.log('✅ Successfully loaded existing data into metrics');
         } catch (error) {
             console.error('❌ Error loading existing data into metrics:', error);
@@ -307,4 +321,3 @@ export const metricsHandler = async (req, res) => {
     const metricsData = await register.metrics();
     res.send(metricsData);
 };
-
