@@ -200,6 +200,63 @@ export const metrics = {
         console.log('✅ Prometheus metrics initialized');
     },
 
+    // Load existing data from database and populate metrics
+    loadExistingData: async () => {
+        try {
+            console.log('📊 Loading existing data from database to populate metrics...');
+
+            // Dynamically import models to avoid circular dependencies
+            const { default: OrderModel } = await import('../models/OrderModel.js');
+            const { default: PaymentModel } = await import('../models/PaymentModel.js');
+            const { default: UserModel } = await import('../models/UserModel.js');
+
+            // Load and count orders by status
+            const orders = await OrderModel.find({});
+            const ordersByStatus = orders.reduce((acc, order) => {
+                const status = order.orderStatus || 'pending';
+                if (!acc[status]) acc[status] = { count: 0, value: 0 };
+                acc[status].count++;
+                acc[status].value += order.totalAmount || 0;
+                return acc;
+            }, {});
+
+            // Update order metrics with actual counts
+            for (const [status, data] of Object.entries(ordersByStatus)) {
+                ordersTotal.inc({ status }, data.count);
+                ordersValue.inc({ status }, data.value);
+                console.log(`  📦 Loaded ${data.count} orders with status "${status}" (total value: $${data.value})`);
+            }
+
+            // Load and count payments by status and method
+            const payments = await PaymentModel.find({});
+            const paymentsByStatusMethod = payments.reduce((acc, payment) => {
+                const status = payment.payStatus || 'created';
+                const method = payment.paymentMethod?.toLowerCase() || 'unknown';
+                const key = `${status}_${method}`;
+                if (!acc[key]) acc[key] = { status, method, count: 0, value: 0 };
+                acc[key].count++;
+                acc[key].value += payment.amount || 0;
+                return acc;
+            }, {});
+
+            // Update payment metrics with actual counts
+            for (const data of Object.values(paymentsByStatusMethod)) {
+                paymentsTotal.inc({ status: data.status, method: data.method }, data.count);
+                paymentsValue.inc({ status: data.status, method: data.method }, data.value);
+                console.log(`  💳 Loaded ${data.count} ${data.method} payments with status "${data.status}" (total value: $${data.value})`);
+            }
+
+            // Load and count users
+            const users = await UserModel.find({});
+            usersTotal.inc({ role: 'customer' }, users.length);
+            console.log(`  👥 Loaded ${users.length} users`);
+
+            console.log('✅ Successfully loaded existing data into metrics');
+        } catch (error) {
+            console.error('❌ Error loading existing data into metrics:', error);
+        }
+    },
+
     recordOrder: (status, value) => {
         console.log(`📊 Recording order metric: status=${status}, value=${value}`);
         ordersTotal.inc({ status });
