@@ -34,13 +34,24 @@ router.post('/newOrder', AuthenticateUser, async (req, res) => {
         });
 
         const newOrder = await order.save();
-        console.log(newOrder);
-        if (newOrder) {
-            res.status(200).json(newOrder);
+        
+        // Check if save was successful
+        if (!newOrder) {
+            return res.status(400).json({ error: "Invalid order data" });
         }
-        else {
-            res.status(400).json({ error: "Invalid order data" });
+        
+        console.log("✅ New order saved:", newOrder._id);
+        console.log(`🔥 About to record order metrics: status=pending, totalAmount=${totalAmount}`);
+        
+        try {
+            // Track metrics
+            metrics.recordOrder('pending', totalAmount);
+            console.log("✅ Order metrics recorded successfully");
+        } catch (metricsError) {
+            console.error("❌ Error recording order metrics:", metricsError);
         }
+        
+        res.status(200).json(newOrder);
     } catch (error) {
         console.log(error);
         // Handle duplicate key error
@@ -60,8 +71,13 @@ router.put('/updateOrder/:id', Authenticate, async (req, res) => {
         const order = await OrderModel.findById(req.params.id);
         const { orderStatus } = req.body;
         if (order) {
+            const oldStatus = order.orderStatus;
             order.orderStatus = orderStatus;
             const updatedOrder = await order.save();
+
+            // Track metrics for status change
+            metrics.recordOrder(orderStatus, 0);
+
             res.status(200).json(updatedOrder);
         } else {
             res.status(404).json({ error: 'Order not found' });
@@ -97,6 +113,9 @@ router.put('/updateOrderStatus/:id', AuthenticateDel, async (req, res) => {
             order.orderStatus = orderStatus;
             const updatedOrder = await order.save();
 
+            // Track metrics
+            metrics.recordOrder(orderStatus, 0);
+
             // If delivered, set drone status to AVAILABLE
             if (orderStatus === 'delivered' && order.drone) {
                 const DroneModel = (await import('../models/DroneModel.js')).default;
@@ -104,6 +123,7 @@ router.put('/updateOrderStatus/:id', AuthenticateDel, async (req, res) => {
                 if (drone) {
                     drone.status = 'AVAILABLE';
                     await drone.save();
+                    metrics.recordDroneDelivery('completed');
                 }
             }
 
@@ -146,12 +166,16 @@ router.put('/assignDrone/:id', AuthenticateDel, async (req, res) => {
             order.orderStatus = 'shipping'; // Change status to shipping when drone is assigned
             await order.save();
 
+            // Track metrics
+            metrics.recordOrder('shipping', 0);
+
             // Update drone status to IN_DELIVERY
             const DroneModel = (await import('../models/DroneModel.js')).default;
             const drone = await DroneModel.findById(droneId);
             if (drone) {
                 drone.status = 'IN_DELIVERY';
                 await drone.save();
+                metrics.recordDroneDelivery('assigned');
             }
 
             res.status(200).json(order);
@@ -347,6 +371,10 @@ router.put('/cancelOrder/:id', AuthenticateUser, async (req, res) => {
 
         order.orderStatus = 'cancel';
         const updatedOrder = await order.save();
+
+        // Track metrics
+        metrics.recordOrder('cancel', 0);
+
         res.status(200).json(updatedOrder);
     } catch (error) {
         console.log(error);
