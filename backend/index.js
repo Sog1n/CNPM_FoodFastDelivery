@@ -97,10 +97,11 @@ app.use('/api/order', orderRoutes);
 app.use("/api/drones", DroneRoutes);
 
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
+    .then(async () => {
         console.log("MongoDB connected");
         metrics.setDbStatus(true); // Track DB connection status
         metrics.initialize(); // Initialize all metrics with 0 values
+        await metrics.loadExistingData(); // Load existing data from database
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server running on port ${PORT}`);
         });
