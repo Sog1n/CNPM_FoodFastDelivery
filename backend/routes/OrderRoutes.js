@@ -18,6 +18,15 @@ router.post('/newOrder', AuthenticateUser, async (req, res) => {
         const existingOrder = await OrderModel.findOne({ paymentId: paymentId });
         if (existingOrder) {
             console.log("Order already exists for this payment:", existingOrder._id);
+
+            // Still track metrics for existing order to ensure consistency
+            try {
+                metrics.recordOrder(existingOrder.orderStatus || 'pending', 0);
+                console.log(`✅ Tracked existing order metrics: ${existingOrder.orderStatus}`);
+            } catch (metricsError) {
+                console.error("❌ Error tracking existing order metrics:", metricsError);
+            }
+
             return res.status(200).json({
                 message: "Order already created",
                 order: existingOrder
@@ -34,15 +43,15 @@ router.post('/newOrder', AuthenticateUser, async (req, res) => {
         });
 
         const newOrder = await order.save();
-        
+
         // Check if save was successful
         if (!newOrder) {
             return res.status(400).json({ error: "Invalid order data" });
         }
-        
+
         console.log("✅ New order saved:", newOrder._id);
         console.log(`🔥 About to record order metrics: status=pending, totalAmount=${totalAmount}`);
-        
+
         try {
             // Track metrics
             metrics.recordOrder('pending', totalAmount);
@@ -50,7 +59,7 @@ router.post('/newOrder', AuthenticateUser, async (req, res) => {
         } catch (metricsError) {
             console.error("❌ Error recording order metrics:", metricsError);
         }
-        
+
         res.status(200).json(newOrder);
     } catch (error) {
         console.log(error);
