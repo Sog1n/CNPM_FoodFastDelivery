@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import querystring from 'qs';
 import dateFormat from 'dateformat';
+import { metrics } from '../middleware/prometheus.middleware.js';
 
 dotenv.config()
 
@@ -28,6 +29,9 @@ export const checkout = async (req, res) => {
 
     const order = await razorpay.orders.create(options);
 
+    // Track metric: Payment initiated
+    metrics.recordPayment('created', 'razorpay', amount / 100);
+
     res.json({
       orderId: order.id,
       amount: amount / 100, // in INR
@@ -38,6 +42,8 @@ export const checkout = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating order:", error);
+    // Track metric: Payment creation failed
+    metrics.recordPayment('failed', 'razorpay', 0);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -64,6 +70,9 @@ export const verify = async (req, res) => {
     useraddress,
     payStatus: "paid",
   });
+
+  // Track metric: Payment verified successfully
+  metrics.recordPayment('paid', 'razorpay', amount);
 
   res.json({ message: "payment successfull..", success: true, orderConfirm });
 };
@@ -120,7 +129,7 @@ export const createVNPayPayment = async (req, res) => {
       req.socket.remoteAddress ||
       req.connection.socket.remoteAddress;
 
-    // VNPay config from env
+    // VNPay config from ..env
     const tmnCode = process.env.VNP_TMN_CODE;
     const secretKey = process.env.VNP_HASH_SECRET;
     let vnpUrl = process.env.VNP_URL;
@@ -158,6 +167,9 @@ export const createVNPayPayment = async (req, res) => {
 
     vnp_Params['vnp_SecureHash'] = signed;
     vnpUrl += '?' + querystring.stringify(vnp_Params, { encode: false });
+
+    // Track metric: VNPay payment initiated
+    metrics.recordPayment('created', 'vnpay', amount);
 
     res.json({
       success: true,
@@ -197,10 +209,15 @@ export const vnpayReturn = async (req, res) => {
         const amount = vnp_Params['vnp_Amount'] / 100; // Convert back to VND
         const payDate = vnp_Params['vnp_PayDate'];
 
+        // Track metric: VNPay payment successful
+        metrics.recordPayment('success', 'vnpay', amount / 23000); // Convert VND to USD
+
         // Redirect to success page with payment info
         res.redirect(`${process.env.FRONTEND_URL}/payment-success?orderId=${orderId}&transactionNo=${transactionNo}&amount=${amount}&payDate=${payDate}&secureHash=${secureHash}`);
       } else {
         // Payment failed
+        // Track metric: VNPay payment failed
+        metrics.recordPayment('failed', 'vnpay', 0);
         res.redirect(`${process.env.FRONTEND_URL}/payment-failed?code=${responseCode}`);
       }
     } else {
@@ -291,6 +308,9 @@ export const vnpayVerifyAndCreateOrder = async (req, res) => {
       paymentMethod: "VNPay",
       paymentDate: payDate
     });
+
+    // Track metric: VNPay payment confirmed
+    metrics.recordPayment('paid', 'vnpay', amount / 23000);
 
     res.json({
       success: true,
