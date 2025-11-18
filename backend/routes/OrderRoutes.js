@@ -34,21 +34,24 @@ router.post('/newOrder', AuthenticateUser, async (req, res) => {
         });
 
         const newOrder = await order.save();
+        
+        // Check if save was successful
+        if (!newOrder) {
+            return res.status(400).json({ error: "Invalid order data" });
+        }
+        
         console.log("✅ New order saved:", newOrder._id);
-        if (newOrder) {
-            console.log(`🔥 About to record order metrics: status=pending, totalAmount=${totalAmount}`);
-            try {
-                // Track metrics
-                metrics.recordOrder('pending', totalAmount);
-                console.log("✅ Order metrics recorded successfully");
-            } catch (metricsError) {
-                console.error("❌ Error recording order metrics:", metricsError);
-            }
-            res.status(200).json(newOrder);
+        console.log(`🔥 About to record order metrics: status=pending, totalAmount=${totalAmount}`);
+        
+        try {
+            // Track metrics
+            metrics.recordOrder('pending', totalAmount);
+            console.log("✅ Order metrics recorded successfully");
+        } catch (metricsError) {
+            console.error("❌ Error recording order metrics:", metricsError);
         }
-        else {
-            res.status(400).json({ error: "Invalid order data" });
-        }
+        
+        res.status(200).json(newOrder);
     } catch (error) {
         console.log(error);
         // Handle duplicate key error
