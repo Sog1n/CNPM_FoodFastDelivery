@@ -100,6 +100,7 @@ mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
         console.log("MongoDB connected");
         metrics.setDbStatus(true); // Track DB connection status
+        metrics.initialize(); // Initialize all metrics with 0 values
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server running on port ${PORT}`);
         });

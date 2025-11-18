@@ -158,22 +158,70 @@ export const prometheusMiddleware = (req, res, next) => {
 
 // Functions để update custom metrics từ controllers
 export const metrics = {
+    // Initialize metrics with 0 values to make them visible in Prometheus
+    initialize: () => {
+        console.log('🔧 Initializing Prometheus metrics...');
+        // Initialize order metrics with 0
+        ordersTotal.inc({ status: 'pending' }, 0);
+        ordersTotal.inc({ status: 'confirmed' }, 0);
+        ordersTotal.inc({ status: 'preparing' }, 0);
+        ordersTotal.inc({ status: 'shipping' }, 0);
+        ordersTotal.inc({ status: 'delivered' }, 0);
+        ordersTotal.inc({ status: 'cancelled' }, 0);
+
+        ordersValue.inc({ status: 'pending' }, 0);
+        ordersValue.inc({ status: 'confirmed' }, 0);
+        ordersValue.inc({ status: 'preparing' }, 0);
+        ordersValue.inc({ status: 'shipping' }, 0);
+        ordersValue.inc({ status: 'delivered' }, 0);
+        ordersValue.inc({ status: 'cancelled' }, 0);
+
+        // Initialize payment metrics with 0
+        paymentsTotal.inc({ status: 'created', method: 'razorpay' }, 0);
+        paymentsTotal.inc({ status: 'paid', method: 'razorpay' }, 0);
+        paymentsTotal.inc({ status: 'failed', method: 'razorpay' }, 0);
+        paymentsTotal.inc({ status: 'created', method: 'vnpay' }, 0);
+        paymentsTotal.inc({ status: 'success', method: 'vnpay' }, 0);
+        paymentsTotal.inc({ status: 'failed', method: 'vnpay' }, 0);
+
+        paymentsValue.inc({ status: 'created', method: 'razorpay' }, 0);
+        paymentsValue.inc({ status: 'paid', method: 'razorpay' }, 0);
+        paymentsValue.inc({ status: 'failed', method: 'razorpay' }, 0);
+        paymentsValue.inc({ status: 'created', method: 'vnpay' }, 0);
+        paymentsValue.inc({ status: 'success', method: 'vnpay' }, 0);
+        paymentsValue.inc({ status: 'failed', method: 'vnpay' }, 0);
+
+        // Initialize user metrics with 0
+        usersTotal.inc({ role: 'customer' }, 0);
+        usersTotal.inc({ role: 'restaurant' }, 0);
+        usersTotal.inc({ role: 'delivery' }, 0);
+        usersTotal.inc({ role: 'admin' }, 0);
+
+        console.log('✅ Prometheus metrics initialized');
+    },
+
     recordOrder: (status, value) => {
+        console.log(`📊 Recording order metric: status=${status}, value=${value}`);
         ordersTotal.inc({ status });
         if (value) {
             ordersValue.inc({ status }, value);
         }
+        console.log(`✅ Order metric recorded successfully`);
     },
 
     recordPayment: (status, method, value) => {
+        console.log(`📊 Recording payment metric: status=${status}, method=${method}, value=${value}`);
         paymentsTotal.inc({ status, method });
         if (value) {
             paymentsValue.inc({ status, method }, value);
         }
+        console.log(`✅ Payment metric recorded successfully`);
     },
 
     recordUser: (role) => {
+        console.log(`📊 Recording user metric: role=${role}`);
         usersTotal.inc({ role });
+        console.log(`✅ User metric recorded successfully`);
     },
 
     setDbStatus: (connected) => {
