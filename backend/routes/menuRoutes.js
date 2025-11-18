@@ -5,6 +5,7 @@ import MenuItemModel from '../models/MenuModel.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import {Authenticate} from '../routes/ResRoutes.js'
 import {AuthenticateUser} from '../routes/UserRoutes.js'
+import { metrics } from '../middleware/prometheus.middleware.js';
 import fs from 'fs';
 
 
@@ -33,6 +34,10 @@ router.post('/ResMenu', Authenticate,upload.single('image'), async (req, res) =>
     });
 
     fs.unlinkSync(localFilePath); // Remove the local file after uploading to Cloudinary
+
+    // ✅ Track metric: New menu item created
+    // Using restaurant metric as proxy for menu items
+    metrics.recordRestaurant('menu_item_added');
 
     res.status(200).json(menuItem);
   } catch (err) {
