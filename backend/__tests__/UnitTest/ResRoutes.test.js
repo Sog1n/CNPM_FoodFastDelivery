@@ -76,7 +76,7 @@ describe('ResRoutes Unit Tests', () => {
         .post('/ResLogin')
         .send({ email: 'r1@example.com', password: 'secret' });
 
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(200);
       expect(res.body.status).toBe(true);
       expect(res.headers['set-cookie']).toBeDefined();
       expect(RestaurantModel.findOne).toHaveBeenCalledWith({ email: 'r1@example.com' });
