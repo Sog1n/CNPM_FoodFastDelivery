@@ -1,0 +1,122 @@
+@startuml
+hide circle
+hide methods
+hide stereotypes
+
+entity "USER" as USER {
+  * _id : ObjectId <<PK>>
+  --
+  ownerName : string
+  phone : string <<UNIQUE>>
+  email : string <<UNIQUE>>
+  password : string
+}
+
+entity "RESTAURANT" as RESTAURANT {
+  * _id : ObjectId <<PK>>
+  --
+  restaurantName : string
+  ownerName : string
+  phone : string <<UNIQUE>>
+  email : string <<UNIQUE>>
+  city : string
+  address : string
+  countryName : string
+  stateName : string
+  isOpen : boolean
+  menu[] : ObjectId -> MENU_ITEM._id
+  user[] : ObjectId -> USER._id
+}
+
+entity "MENU_ITEM" as MENU_ITEM {
+  * _id : ObjectId <<PK>>
+  --
+  dishName : string
+  description : string
+  price : number
+  cuisineName : string
+  image : string
+  inStock : boolean
+  ownerId : ObjectId <<FK>> -> RESTAURANT._id
+}
+
+entity "DELIVERY" as DELIVERY {
+  * _id : ObjectId <<PK>>
+  --
+  ownerName : string
+  phone : string <<UNIQUE>>
+  email : string <<UNIQUE>>
+  password : string
+  drivingLicenceNo : string <<UNIQUE>>
+  city : string
+  address : string
+  countryName : string
+  stateName : string
+}
+
+entity "DELIVERY_ADDRESS" as DELIVERY_ADDRESS {
+  * _id : ObjectId <<PK>>
+  --
+  userId : ObjectId <<FK>> -> USER._id
+  country : string
+  state : string
+  city : string
+  address : string
+}
+
+entity "PAYMENT" as PAYMENT {
+  * _id : ObjectId <<PK>>
+  --
+  orderId : string
+  ownerId : string  ' user id as string
+  paymentId : string
+  signature : string
+  amount : number
+  payStatus : string  ' created | paid | failed
+  paymentMethod : string  ' Razorpay | VNPay
+  paymentDate : string
+}
+
+entity "ORDER" as ORDER {
+  * _id : ObjectId <<PK>>
+  --
+  user : ObjectId <<FK>> -> USER._id
+  restaurant : ObjectId <<FK>> -> RESTAURANT._id
+  deliveryman : ObjectId <<FK>> -> DELIVERY._id
+  drone : ObjectId <<FK>> -> DRONE._id
+  paymentId : ObjectId <<FK>> <<UNIQUE>> -> PAYMENT._id
+  deliveryAddress : ObjectId <<FK>> -> DELIVERY_ADDRESS._id
+  orderStatus : string  ' pending | confirmed | ready | shipping | delivered | cancel
+  totalAmount : number
+  createdAt : date
+  updatedAt : date
+  --
+  orderItems[] : (menuItem?: ObjectId -> MENU_ITEM._id, item:{dishName,price}, quantity)
+}
+
+entity "DRONE" as DRONE {
+  * _id : ObjectId <<PK>>
+  --
+  droneId : string <<UNIQUE>>
+  status : string  ' AVAILABLE | IN_DELIVERY | MAINTENANCE | OFFLINE
+  batteryLevel : number
+  maxPayload : number
+  currentOrder : ObjectId <<FK>> -> ORDER._id
+  assignedRestaurant : ObjectId <<FK>> -> RESTAURANT._id
+  currentLocation.latitude : number
+  currentLocation.longitude : number
+  maintenanceSchedule.lastMaintenance : date
+  maintenanceSchedule.nextMaintenance : date
+}
+
+USER ||--o{ DELIVERY_ADDRESS : has
+USER ||--o{ ORDER : places
+RESTAURANT ||--o{ MENU_ITEM : offers
+RESTAURANT ||--o{ ORDER : receives
+RESTAURANT ||--o{ DRONE : hosts
+PAYMENT ||--|| ORDER : funds
+DELIVERY ||--o{ ORDER : delivers
+DRONE ||--o{ ORDER : assigned_to
+MENU_ITEM ||--o{ ORDER : referenced_by_item
+
+@enduml
