@@ -210,6 +210,20 @@ export const metrics = {
             const { default: PaymentModel } = await import('../models/PaymentModel.js');
             const { default: UserModel } = await import('../models/UserModel.js');
 
+            // Validate models are loaded
+            if (!OrderModel) {
+                console.error('⚠️ OrderModel is undefined, skipping order metrics');
+                return;
+            }
+            if (!PaymentModel) {
+                console.error('⚠️ PaymentModel is undefined, skipping payment metrics');
+                return;
+            }
+            if (!UserModel) {
+                console.error('⚠️ UserModel is undefined, skipping user metrics');
+                return;
+            }
+
             // Load and count orders by status
             const orders = await OrderModel.find({});
             const ordersByStatus = orders.reduce((acc, order) => {
