@@ -18,6 +18,7 @@
     "@mui/material": "^5.16.5",
     "@stripe/react-stripe-js": "^2.7.3",
     "@stripe/stripe-js": "^4.1.0",
+    "axios": "^1.13.2",
     "bcrypt": "^5.1.1",
     "cloudinary": "^2.3.0",
     "cookie-parser": "^1.4.6",
@@ -49,5 +50,9 @@
     "mongodb-memory-server": "^9.1.6",
     "supertest": "^7.1.4",
     "vitest": "^4.0.3"
+  },
+  "directories": {
+    "doc": "docs",
+    "test": "test"
   }
 }
